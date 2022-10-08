@@ -2,7 +2,9 @@ repo: "muppetshow"
 repo_owner: &repo_owner "braintree"
 repo_branch: "main"
 github_domain: "github.com"
-github_private_key_path: "./github_hecklerd"
+github_api_domain: "api.github.com" # leave empty for Enterprise
+github_api_prefix: "" # set to "/api/v3" for Enterprise
+github_private_key_path: "./github-hecklerd.pem"
 github_app_slug: "heckler-dev"
 github_app_id: 7
 github_app_email: "heckler@paypal.com"
