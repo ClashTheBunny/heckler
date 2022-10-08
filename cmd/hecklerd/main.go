@@ -204,6 +204,8 @@ type HecklerdConf struct {
 	GitHubAppSlug              string                `yaml:"github_app_slug"`
 	GitHubDisableNotifications bool                  `yaml:"github_disable_notifications"`
 	GitHubDomain               string                `yaml:"github_domain"`
+	GitHubAPIDomain            string                `yaml:"github_api_domain"`
+	GitHubAPIPrefix            string                `yaml:"github_api_prefix"`
 	GitHubHttpProxy            string                `yaml:"github_http_proxy"`
 	GitHubPrivateKeyPath       string                `yaml:"github_private_key_path"`
 	GitServerMaxClients        int                   `yaml:"git_server_max_clients"`
@@ -1599,6 +1601,13 @@ func githubConn(conf *HecklerdConf) (*github.Client, *ghinstallation.Transport, 
 		tr.(*http.Transport).Proxy = http.ProxyURL(proxyUrl)
 	}
 
+	var apidomain string
+	if conf.GitHubAPIDomain != "" {
+		apidomain = conf.GitHubAPIDomain
+	} else {
+		apidomain = conf.GitHubDomain
+	}
+
 	var privateKeyPath string
 	if conf.GitHubPrivateKeyPath != "" {
 		privateKeyPath = conf.GitHubPrivateKeyPath
@@ -1622,7 +1631,7 @@ func githubConn(conf *HecklerdConf) (*github.Client, *ghinstallation.Transport, 
 	if err != nil {
 		return nil, nil, err
 	}
-	githubUrl := "https://" + conf.GitHubDomain + "/api/v3"
+	githubUrl := "https://" + apidomain + conf.GitHubAPIPrefix
 	itr.BaseURL = githubUrl
 
 	// Use installation transport with github.com/google/go-github
