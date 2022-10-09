@@ -18,18 +18,14 @@ In the general settings for your app, copy the App ID and put it in hecklerd_con
 
 Create a github repo with all your puppet files in it.
 
+Add the heckler vendor directory from manifests/vendor/heckler to your basemodulespath somewhere
+
+Add `,heckler` to `reports =`.
+
+Add a CODEOWNERS to your repo.
+
 Install and Authorize your app by going to https://github.com/settings/apps/heckler-dev and clicking "public page", which I think is also https://github.com/apps/heckler-dev.  Choose "Only select repositories" and select your puppet repo.
 
 That sends you to your heckler instance with a code and installation ID.
 
 You then copy that installation ID into hecklerd_conf.yaml
-
-### probably wrong:
-```
-ssh-keygen -t rsa -b 4096 -m PEM -f github_hecklerd
-```
-
-Don't use a password.
-
-Upload the key as a deploy key for your puppet repo.
-
