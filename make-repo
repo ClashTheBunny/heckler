@@ -129,6 +129,7 @@ modify the input to the sail game
 	done
 	popd
 
+	echo sudo rm -fr "${REPO}"
 	sudo rm -fr "${REPO}"
 	mkdir "${REPO}"
 	pushd "${REPO}"
