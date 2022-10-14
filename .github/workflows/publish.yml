@@ -8,6 +8,11 @@ on:
     tags:
       - v*
 
+# Allow one concurrent deployment
+concurrency:
+  group: "assets"
+  cancel-in-progress: true
+
 env:
   DEBIAN_CODENAME: bookworm
 
@@ -110,8 +115,8 @@ jobs:
         make docker-build REGISTRY=ghcr.io REGISTRY_USER=${{ needs.check_utility_container.outputs.repo_owner_lc }} DEBIAN_CODENAME=${{ env.DEBIAN_CODENAME }}
 
     - run: |
-        zip heckler.zip *.tmpl doc/sample-configs/hecklerd_conf.yaml heckler hecklerd
-        zip rizzo.zip doc/sample-configs/rizzo_conf.yaml rizzod rizzo-rev
+        zip heckler.zip *.tmpl docs/sample-configs/hecklerd_conf.yaml heckler hecklerd
+        zip rizzo.zip docs/sample-configs/rizzo_conf.yaml rizzod rizzo-rev
 
     - name: Upload Release Asset Heckler
       id: upload-release-asset-heckler

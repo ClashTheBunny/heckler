@@ -19,6 +19,6 @@ COPY --from=0 /usr/share/ca-certificates /usr/share/ca-certificates
 COPY --from=0 /var /var
 COPY --from=0 /usr_merge /
 
-COPY doc/sample-configs/rizzod_conf.yaml rizzod rizzo-rev /
+COPY docs/sample-configs/rizzod_conf.yaml rizzod rizzo-rev /
 
 CMD ["/rizzod"]
