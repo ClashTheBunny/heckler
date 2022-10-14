@@ -25,6 +25,7 @@ RUN apt-get update \
    sudo \
    tree \
    vim-tiny \
+   lsb-release \
    2>&1
 
 WORKDIR /usr/local
