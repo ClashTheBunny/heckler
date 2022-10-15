@@ -1623,7 +1623,7 @@ func githubConn(conf *HecklerdConf) (*github.Client, *ghinstallation.Transport, 
 		return nil, nil, err
 	}
 
-  var client *github.Client
+	var client *github.Client
 	if conf.GitHubDomain != "" {
 		githubUrl := "https://" + conf.GitHubDomain + "/api/v3"
 		itr.BaseURL = githubUrl
