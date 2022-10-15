@@ -12,9 +12,9 @@ You could also run `./make-repo -u git@github.com/your_username/your_new_puppet.
 
 ## Register new GitHub App
 
-Head over to https://braintree.github.io/heckler/create_github_app.html and click the button.
+Head over to https://clashthebunny.github.io/heckler/create_github_app.html and click the button.
 
-Name the app, it must be unique. You will be redirected back to https://braintree.github.io/heckler/redirect.html, but with a secret code as a parameter.  Fill in your GITHUB_TOKEN, created through https://github.com/settings/tokens.  It can have short validity, it's not used after the next step.  Click the button and it will complete the curl command.  Run that in a location you keep secret information (encrypted, etc), as it contains the PRIVATE KEY for your app.
+Name the app, it must be unique. You will be redirected back to https://clashthebunny.github.io/heckler/redirect.html, but with a secret code as a parameter.  Fill in your GITHUB_TOKEN, created through https://github.com/settings/tokens.  It can have short validity, it's not used after the next step.  Click the button and it will complete the curl command.  Run that in a location you keep secret information (encrypted, etc), as it contains the PRIVATE KEY for your app.
 
 ### Configure Heckler
 
