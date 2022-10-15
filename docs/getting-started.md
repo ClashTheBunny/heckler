@@ -58,3 +58,9 @@ Add the IP that heckler will reach out to the GitHub API with at the very bottom
 ```
 ./hecklerd
 ```
+
+or on a usr_merged linux instance:
+
+```
+docker build -t heckler-scratch -f Dockerfile.heckler; docker run -it --rm -v $PWD/github-hecklerd.pem:/github-hecklerd.pem -v /usr:/usr:ro heckler-scratch
+```
