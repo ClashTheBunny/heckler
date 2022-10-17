@@ -27,8 +27,8 @@ jobs:
       repo_owner_lc: ${{ steps.check_version.outputs.repo_owner_lc }}
       shortref: ${{ steps.check_version.outputs.shortref }}
       date: ${{ steps.check_version.outputs.date }}
+      debian_version: ${{ steps.check_version.outputs.debian_version }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
-      debian_version: ${{ steps.create_release.outputs.debian_version }}
 
     steps:
     - uses: actions/checkout@v3
