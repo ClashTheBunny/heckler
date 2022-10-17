@@ -54,13 +54,13 @@ docker-test: docker-build-image.$(DEBIAN_CODENAME) ## Test heckler via the conta
 podman-test: podman-build-image ## Test heckler via the container
 	podman run --uidmap $(user_id_real):0:1  --uidmap 0:1:$(user_id_real) --uidmap $(uid_plus_one):$(uid_plus_one):$(max_minus_uid) --rm -v $(PWD):/home/builder/$(NAME) $(IMAGE) make -C /home/builder/$(NAME) test
 
-.PHONY: docker-build-image
+.PHONY: docker-build-image.$(DEBIAN_CODENAME)
 docker-build-image.$(DEBIAN_CODENAME): Dockerfile.$(DEBIAN_CODENAME) ## Build a docker image used for packaging
-	docker build --rm -t $(IMAGE) -t $(IMAGE_TAGGED) - < Dockerfile.$(DEBIAN_CODENAME)
+	docker build --rm --cache-from $(IMAGE):latest -t $(IMAGE) -t $(IMAGE_TAGGED) -f Dockerfile.$(DEBIAN_CODENAME) .
 
 .PHONY: podman-build-image
 podman-build-image: Dockerfile.$(DEBIAN_CODENAME) ## Build a docker image used for packaging
-	docker build --rm -t $(IMAGE) -t $(IMAGE_TAGGED) - < Dockerfile.$(DEBIAN_CODENAME)
+	podman build --rm --cache-from $(IMAGE):latest -t $(IMAGE) -t $(IMAGE_TAGGED) -f Dockerfile.$(DEBIAN_CODENAME) .
 
 .PHONY: docker-build-deb
 docker-build-deb: docker-build-image.$(DEBIAN_CODENAME) ## Build the deb in a local docker container
