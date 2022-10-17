@@ -27,8 +27,8 @@ jobs:
       repo_owner_lc: ${{ steps.check_version.outputs.repo_owner_lc }}
       shortref: ${{ steps.check_version.outputs.shortref }}
       date: ${{ steps.check_version.outputs.date }}
+      debian_version: ${{ steps.check_version.outputs.debian_version }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
-      debian_version: ${{ steps.create_release.outputs.debian_version }}
 
     steps:
     - uses: actions/checkout@v3
@@ -126,7 +126,7 @@ jobs:
 
     - run: |
         zip heckler.zip *.tmpl docs/sample-configs/hecklerd_conf.yaml heckler hecklerd
-        zip rizzo.zip docs/sample-configs/rizzo_conf.yaml rizzod rizzo-rev
+        zip rizzo.zip docs/sample-configs/rizzod_conf.yaml rizzod rizzo-rev
 
     - name: Upload Release Asset Heckler
       id: upload-release-asset-heckler
@@ -220,6 +220,47 @@ jobs:
         asset_path: ./${{ steps.build_debs.outputs.rizzod_deb }}
         asset_content_type: application/vnd.debian.binary-package 
 
+    - name: install git-lfs
+      run: sudo apt install git-lfs -y
+
+    - name: pull deb repo-repoo
+      run: |
+        mkdir ~/.ssh
+        cat > ~/.ssh/id_rsa_repo <<<${REPO_DEPLOY_KEY}
+        chmod 600 ~/.ssh/id_rsa_repo
+        git clone git@github.com:ClashTheBunny/heckler-deb.git repo
+      env:
+        REPO_DEPLOY_KEY: ${{ secrets.REPO_DEPLOY_KEY }}
+        GIT_SSH_COMMAND: "ssh -i ~/.ssh/id_rsa_repo"
+
+    - name: copy built versions into repo
+      run: |
+        cp *.deb repo/docs/pool/
+
+    - name: update all release files # needs dpkg-dev and apt-utils
+      run: |
+        cd repo/docs/
+        apt-ftparchive --arch amd64 packages pool/main > dists/stable/main/binary-amd64/Packages
+        gzip -k -f dists/stable/main/binary-amd64/Packages
+
+        apt-ftparchive contents pool/main > dists/stable/main/Contents-amd64
+        gzip -k -f dists/stable/main/Contents-amd64
+
+        apt-ftparchive release dists/stable/main/binary-amd64 > dists/stable/main/binary-amd64/Release
+        apt-ftparchive release -c release.conf dists/stable > dists/stable/Release
+
+        gpg --import <<<${GPG_SIGNING_KEY}
+        gpg -a --yes --output dists/stable/Release.gpg --detach-sign dists/stable/Release
+        gpg -a --yes --clearsign --output dists/stable/InRelease --detach-sign dists/stable/Release
+        find ./ -type d -exec chmod a+rX {} \;
+        git add -A
+        git commit -m "Publish ${{ steps.check_version.outputs.debian_version }}"
+        git push -u origin main
+      env:
+        GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY}}
+        EMAIL: heckler@mason.ch
+        GIT_SSH_COMMAND: "ssh -i ~/.ssh/id_rsa_repo"
+
     - name: Start SSH via Ngrok
       id: ngrok
       if: ${{ failure() }}
@@ -231,6 +272,7 @@ jobs:
 
         # This password you will use when authorizing via SSH
         USER_PASS: ${{ secrets.USER_PASS }}
+
     - name: Sleep 1 hour
       if: ${{ failure() }}
       run: sleep 1h
