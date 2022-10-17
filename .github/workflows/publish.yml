@@ -17,18 +17,9 @@ env:
   DEBIAN_CODENAME: bookworm
 
 jobs:
-  check_utility_container:
-    name: Checks for this tag's utility container
+  build_and_upload_zip:
+    name: Builds and uploads a zip each for heckler and rizzo
     runs-on: ubuntu-latest
-    outputs:
-      exists: ${{ steps.check_version.outputs.exists }}
-      dockerfile_sha: ${{ steps.check_version.outputs.dockerfile_sha }}
-      repo_lc: ${{ steps.check_version.outputs.repo_lc }}
-      repo_owner_lc: ${{ steps.check_version.outputs.repo_owner_lc }}
-      shortref: ${{ steps.check_version.outputs.shortref }}
-      date: ${{ steps.check_version.outputs.date }}
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      debian_version: ${{ steps.create_release.outputs.debian_version }}
 
     steps:
     - uses: actions/checkout@v3
@@ -60,95 +51,17 @@ jobs:
         echo "::set-output name=shortref::$shortref"
         echo "::set-output name=debian_version::${DEBIAN_VERSION}"
 
-    - name: Create Release
-      id: create_release
-      uses: ncipollo/release-action@v1.11.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        commit: ${{ github.ref }}
-        tag: ${{ steps.check_version.outputs.debian_version }}
-        name: Release ${{ steps.check_version.outputs.debian_version }}
-        draft: false
-        prerelease: false
-        allowUpdates: true
-
-  build_and_upload_utility_container:
-    name: Builds and uploads a docker image used to build heckler
-    runs-on: ubuntu-latest
-    needs: check_utility_container
-    if: ${{ needs.check_utility_container.outputs.exists }} == '1'
-
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        ref: ${{ github.ref }}
 
     - id: pull_intermediates
       run: |
-        docker pull ghcr.io/${{ needs.check_utility_container.outputs.repo_lc }}-builder:${{ needs.check_utility_container.outputs.dockerfile_sha }} || true
-
-    - uses: macbre/push-to-ghcr@master
-      name: Build and publish to ghcr
-      with:
-        dockerfile: Dockerfile.${{ env.DEBIAN_CODENAME }}
-        image_name: ${{ needs.check_utility_container.outputs.repo_lc }}-builder
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        image_tag: latest
-        # docker_io_token: ${{ secrets.DOCKER_IO_TOKEN }}
-
-    - uses: macbre/push-to-ghcr@master
-      name: Build and publish to ghcr
-      with:
-        dockerfile: Dockerfile.${{ env.DEBIAN_CODENAME }}
-        image_name: ${{ needs.check_utility_container.outputs.repo_lc }}-builder
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        image_tag: ${{ needs.check_utility_container.outputs.dockerfile_sha }}
-        # docker_io_token: ${{ secrets.DOCKER_IO_TOKEN }}
-
-  build_and_upload_zip:
-    name: Builds and uploads a zip each for heckler and rizzo
-    runs-on: ubuntu-latest
-    needs: [build_and_upload_utility_container, check_utility_container]
-
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        ref: ${{ github.ref }}
-        fetch-depth: 0
-
-    - id: pull_intermediates
-      run: |
-        docker pull ghcr.io/${{ needs.check_utility_container.outputs.repo_lc }}-builder:${{ needs.check_utility_container.outputs.dockerfile_sha }} || true
+        docker pull ghcr.io/${{ steps.check_version.outputs.repo_lc }}-builder:${{ steps.check_version.outputs.dockerfile_sha }} || true
 
     - run: |
-        make docker-build REGISTRY=ghcr.io REGISTRY_USER=${{ needs.check_utility_container.outputs.repo_owner_lc }} DEBIAN_CODENAME=${{ env.DEBIAN_CODENAME }}
+        make docker-build REGISTRY=ghcr.io REGISTRY_USER=${{ steps.check_version.outputs.repo_owner_lc }} DEBIAN_CODENAME=${{ env.DEBIAN_CODENAME }}
 
     - run: |
         zip heckler.zip *.tmpl docs/sample-configs/hecklerd_conf.yaml heckler hecklerd
-        zip rizzo.zip docs/sample-configs/rizzo_conf.yaml rizzod rizzo-rev
-
-    - name: Upload Release Asset Heckler
-      id: upload-release-asset-heckler
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.check_utility_container.outputs.upload_url }}
-        asset_name: heckler.zip
-        asset_path: ./heckler.zip
-        asset_content_type: application/zip
-
-    - name: Upload Release Asset Rizzo
-      id: upload-release-asset-rizzo
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.check_utility_container.outputs.upload_url }}
-        asset_name: rizzo.zip
-        asset_path: ./rizzo.zip
-        asset_content_type: application/zip
+        zip rizzo.zip docs/sample-configs/rizzod_conf.yaml rizzod rizzo-rev
 
     - uses: docker/setup-qemu-action@v2
 
@@ -163,7 +76,7 @@ jobs:
     - uses: macbre/push-to-ghcr@master
       name: Build and publish to ghcr
       with:
-        image_name: ${{ needs.check_utility_container.outputs.repo_lc }}-heckler
+        image_name: ${{ steps.check_version.outputs.repo_lc }}-heckler
         github_token: ${{ secrets.GITHUB_TOKEN }}
         dockerfile: Dockerfile.heckler
         # docker_io_token: ${{ secrets.DOCKER_IO_TOKEN }}
@@ -171,7 +84,7 @@ jobs:
     - uses: macbre/push-to-ghcr@master
       name: Build and publish to ghcr
       with:
-        image_name: ${{ needs.check_utility_container.outputs.repo_lc }}-rizzo
+        image_name: ${{ steps.check_version.outputs.repo_lc }}-rizzo
         github_token: ${{ secrets.GITHUB_TOKEN }}
         dockerfile: Dockerfile.rizzo
         # docker_io_token: ${{ secrets.DOCKER_IO_TOKEN }}
@@ -182,43 +95,79 @@ jobs:
 
     - id: build_debs
       run: |
-        make docker-build-deb REGISTRY=ghcr.io REGISTRY_USER=${{ needs.check_utility_container.outputs.repo_owner_lc }} DEBIAN_CODENAME=${{ env.DEBIAN_CODENAME }} DEB_VERSION=${{ needs.check_utility_container.outputs.debian_version }}
+        make docker-build-deb REGISTRY=ghcr.io REGISTRY_USER=${{ steps.check_version.outputs.repo_owner_lc }} DEBIAN_CODENAME=${{ env.DEBIAN_CODENAME }} DEB_VERSION=${{ steps.check_version.outputs.debian_version }}
         echo "::set-output name=rizzod_deb::$(ls rizzod_*deb)"
         echo "::set-output name=hecklerd_deb::$(ls hecklerd_*deb)"
         echo "::set-output name=heckler_deb::$(ls heckler_*deb)"
 
-    - name: Upload Release Asset Hecklerd Deb
-      id: upload-release-asset-deb-hecklerd
-      uses: actions/upload-release-asset@v1
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ needs.check_utility_container.outputs.upload_url }}
-        asset_name: ${{ steps.build_debs.outputs.hecklerd_deb }}
-        asset_path: ./${{ steps.build_debs.outputs.hecklerd_deb }}
-        asset_content_type: application/vnd.debian.binary-package 
+        target_commitish: ${{ github.ref }}
+        tag_name: ${{ steps.check_version.outputs.debian_version }}
+        name: Release ${{ steps.check_version.outputs.debian_version }}
+        draft: true
+        prerelease: true
+        files: |
+          ${{ steps.build_debs.outputs.hecklerd_deb }}
+          ${{ steps.build_debs.outputs.heckler_deb }}
+          ${{ steps.build_debs.outputs.rizzod_deb }}
+          heckler.zip
+          rizzo.zip
 
-    - name: Upload Release Asset Heckler Deb
-      id: upload-release-asset-deb-heckler
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.check_utility_container.outputs.upload_url }}
-        asset_name: ${{ steps.build_debs.outputs.heckler_deb }}
-        asset_path: ./${{ steps.build_debs.outputs.heckler_deb }}
-        asset_content_type: application/vnd.debian.binary-package 
 
-    - name: Upload Release Asset Rizzo Deb
-      id: upload-release-asset-deb-rizzo
-      uses: actions/upload-release-asset@v1
+    - name: install git-lfs
+      run: sudo apt install git-lfs -y
+
+    - name: pull deb repo-repoo
+      run: |
+        mkdir ~/.ssh
+        cat > ~/.ssh/id_rsa_repo <<<${REPO_DEPLOY_KEY}
+        chmod 600 ~/.ssh/id_rsa_repo
+        git clone git@github.com:ClashTheBunny/heckler-deb.git repo
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.check_utility_container.outputs.upload_url }}
-        asset_name: ${{ steps.build_debs.outputs.rizzod_deb }}
-        asset_path: ./${{ steps.build_debs.outputs.rizzod_deb }}
-        asset_content_type: application/vnd.debian.binary-package 
+        REPO_DEPLOY_KEY: ${{ secrets.REPO_DEPLOY_KEY }}
+        GIT_SSH_COMMAND: "ssh -i ~/.ssh/id_rsa_repo"
+
+    - name: copy built versions into repo
+      run: |
+        cp *.deb repo/docs/pool/main/
+
+    - name: update all release files # needs dpkg-dev and apt-utils
+      run: |
+        cd repo/docs/
+        apt-ftparchive --arch amd64 packages pool/main > dists/stable/main/binary-amd64/Packages
+        gzip -k -f dists/stable/main/binary-amd64/Packages
+
+        apt-ftparchive contents pool/main > dists/stable/main/Contents-amd64
+        gzip -k -f dists/stable/main/Contents-amd64
+
+        apt-ftparchive release dists/stable/main/binary-amd64 > dists/stable/main/binary-amd64/Release
+        apt-ftparchive release -c release.conf dists/stable > dists/stable/Release
+
+        gpg --import <<<${GPG_SIGNING_KEY}
+        gpg -a --yes --output dists/stable/Release.gpg --detach-sign dists/stable/Release
+        gpg -a --yes --clearsign --output dists/stable/InRelease --detach-sign dists/stable/Release
+        find ./ -type d -exec chmod a+rX {} \;
+      env:
+        GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY}}
+
+    - name: Commit update if diff
+      run: |
+        cd repo/
+        if output=$(git status --porcelain) && [[ -n "${output}" ]]; then
+          git config user.name github-actions
+          git config user.email ${EMAIL}
+          git add -A
+          git commit -m "Publish ${{ steps.check_version.outputs.upload_url }}"
+          git push -u origin main
+        fi
+      env:
+        EMAIL: github-actions@mason.ch
+        GIT_SSH_COMMAND: "ssh -i ~/.ssh/id_rsa_repo"
 
     - name: Start SSH via Ngrok
       id: ngrok
@@ -231,6 +180,7 @@ jobs:
 
         # This password you will use when authorizing via SSH
         USER_PASS: ${{ secrets.USER_PASS }}
+
     - name: Sleep 1 hour
       if: ${{ failure() }}
       run: sleep 1h
