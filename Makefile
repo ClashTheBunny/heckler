@@ -56,11 +56,11 @@ podman-test: podman-build-image ## Test heckler via the container
 
 .PHONY: docker-build-image
 docker-build-image.$(DEBIAN_CODENAME): Dockerfile.$(DEBIAN_CODENAME) ## Build a docker image used for packaging
-	docker build --rm -t $(IMAGE) -t $(IMAGE_TAGGED) - < Dockerfile.$(DEBIAN_CODENAME)
+	docker build --rm --cache-from $(IMAGE):latest -t $(IMAGE) -t $(IMAGE_TAGGED) - < Dockerfile.$(DEBIAN_CODENAME)
 
 .PHONY: podman-build-image
 podman-build-image: Dockerfile.$(DEBIAN_CODENAME) ## Build a docker image used for packaging
-	docker build --rm -t $(IMAGE) -t $(IMAGE_TAGGED) - < Dockerfile.$(DEBIAN_CODENAME)
+	podman build --rm --cache-from $(IMAGE):latest -t $(IMAGE) -t $(IMAGE_TAGGED) - < Dockerfile.$(DEBIAN_CODENAME)
 
 .PHONY: docker-build-deb
 docker-build-deb: docker-build-image.$(DEBIAN_CODENAME) ## Build the deb in a local docker container
